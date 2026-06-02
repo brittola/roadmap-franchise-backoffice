@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roadmap — Franchise Backoffice</title>
+<style>
+  :root {
+    --paper:      oklch(0.985 0.004 85);
+    --surface:    oklch(1    0.002 85);
+    --panel:      oklch(0.965 0.006 85);
+    --ink:        oklch(0.28  0.012 80);
+    --ink-soft:   oklch(0.47  0.012 80);
+    --ink-faint:  oklch(0.61  0.010 80);
+    --on-color:   oklch(0.985 0.004 85);
+    --line:       oklch(0.905 0.006 85);
+    --line-soft:  oklch(0.94  0.005 85);
+    --accent:     oklch(0.52  0.13  264);
+    --accent-ink: oklch(0.42  0.13  264);
+    --accent-bg:  oklch(0.955 0.028 264);
+
+    --done:    oklch(0.58 0.12 150); --done-bg:    oklch(0.95 0.04 150);
+    --partial: oklch(0.62 0.13 70);  --partial-bg: oklch(0.95 0.06 80);
+    --blocked: oklch(0.56 0.16 32);  --blocked-bg: oklch(0.945 0.045 38);
+    --todo:    oklch(0.55 0.018 260);--todo-bg:    oklch(0.945 0.006 260);
+    --deferred:oklch(0.56 0.06 305); --deferred-bg:oklch(0.95 0.025 305);
+
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Inter, sans-serif;
+    --r: 9px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--sans); background: var(--paper); color: var(--ink);
+    line-height: 1.5; -webkit-font-smoothing: antialiased; font-feature-settings: "cv11", "ss01";
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px; }
+
+  /* ---------- Header ---------- */
+  header { border-bottom: 1px solid var(--line); background: linear-gradient(180deg, var(--panel), var(--paper)); padding: 38px 0 26px; }
+  .eyebrow { font-size: 11.5px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--accent-ink); }
+  h1 { font-size: 30px; font-weight: 680; letter-spacing: -0.02em; margin: 7px 0 6px; }
+  .lede { color: var(--ink-soft); font-size: 14.5px; max-width: 64ch; }
+
+  /* ---------- Progress bar ---------- */
+  .progress { margin-top: 26px; }
+  .bar { display: flex; height: 13px; border-radius: 999px; overflow: hidden; border: 1px solid var(--line); background: var(--surface); }
+  .bar > span { transition: width .5s cubic-bezier(.22,1,.36,1); }
+  .bar .s-done{background:var(--done)} .bar .s-partial{background:var(--partial)} .bar .s-blocked{background:var(--blocked)} .bar .s-todo{background:var(--todo)} .bar .s-deferred{background:var(--deferred)}
+
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 20px; margin-top: 13px; }
+  .legend button { display: inline-flex; align-items: center; gap: 8px; background: none; border: 0; cursor: pointer; padding: 4px 2px; font-family: var(--sans); font-size: 13px; color: var(--ink-soft); transition: color .15s, opacity .15s; }
+  .legend button .dot { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+  .legend button .n { font-variant-numeric: tabular-nums; font-weight: 640; color: var(--ink); }
+  .legend button[aria-pressed="false"] { opacity: 0.38; }
+  .legend button:hover { color: var(--ink); }
+
+  /* ---------- Controls ---------- */
+  .controls { position: sticky; top: 0; z-index: 20; background: oklch(0.985 0.004 85 / 0.86); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); padding: 13px 0; }
+  .controls-row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .seg { display: inline-flex; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 3px; }
+  .seg button { border: 0; background: none; cursor: pointer; font-family: var(--sans); font-size: 13px; font-weight: 560; color: var(--ink-soft); padding: 6px 13px; border-radius: 6px; transition: all .15s; }
+  .seg button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px oklch(0 0 0 / 0.07); }
+
+  .search { position: relative; flex: 1; min-width: 180px; }
+  .search input { width: 100%; font-family: var(--sans); font-size: 13.5px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 8px 12px 8px 32px; transition: border-color .15s, box-shadow .15s; }
+  .search input:focus { outline: 0; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+  .search svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--ink-faint); }
+
+  .filter-note { font-size: 12.5px; color: var(--ink-soft); display: none; align-items: center; gap: 8px; }
+  .filter-note.on { display: inline-flex; }
+  .filter-note button { border: 0; background: var(--accent-bg); color: var(--accent-ink); cursor: pointer; border-radius: 6px; padding: 3px 8px; font-size: 12px; font-weight: 600; font-family: var(--sans); }
+
+  /* ---------- Main ---------- */
+  main { padding: 8px 0 80px; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .group { margin-top: 30px; }
+  .group-head { display: flex; align-items: baseline; gap: 12px; padding: 0 0 9px; border-bottom: 1px solid var(--line); }
+  .group-head h2 { font-size: 16px; font-weight: 640; letter-spacing: -0.01em; }
+  .group-head .meta { font-size: 12.5px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+  .group-head .gid { font: 600 12px/1 var(--mono); color: var(--accent-ink); background: var(--accent-bg); padding: 3px 7px; border-radius: 5px; }
+
+  .row { display: grid; grid-template-columns: 116px 1fr auto; gap: 16px; align-items: start; padding: 13px 4px; border-bottom: 1px solid var(--line-soft); transition: background .12s; }
+  .row:hover { background: var(--panel); }
+  .row.hidden { display: none; }
+
+  .pill { display: inline-flex; align-items: center; gap: 6px; align-self: start; font-size: 12px; font-weight: 600; padding: 3px 9px 3px 7px; border-radius: 999px; white-space: nowrap; }
+  .pill .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .pill.done{color:var(--done);background:var(--done-bg)} .pill.partial{color:oklch(0.45 0.11 60);background:var(--partial-bg)} .pill.blocked{color:var(--blocked);background:var(--blocked-bg)} .pill.todo{color:var(--todo);background:var(--todo-bg)} .pill.deferred{color:var(--deferred);background:var(--deferred-bg)}
+
+  .body .title { font-size: 14.5px; font-weight: 560; letter-spacing: -0.005em; }
+  .body .note { font-size: 13px; color: var(--ink-soft); margin-top: 3px; }
+  .body code { font: 500 12.5px/1.3 var(--mono); background: var(--panel); border: 1px solid var(--line); padding: 1.5px 5px; border-radius: 5px; color: var(--ink); }
+
+  .size { display:inline-block; font: 700 10.5px/1 var(--mono); letter-spacing: .03em; padding: 3px 5px; border-radius: 4px; border: 1px solid var(--line); color: var(--ink-soft); background: var(--surface); vertical-align: 1px; margin-left: 7px; }
+
+  .tags { display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; max-width: 230px; }
+  .tag { font: 600 11px/1 var(--mono); letter-spacing: 0.01em; cursor: pointer; padding: 4px 7px; border-radius: 5px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); transition: all .13s; white-space: nowrap; }
+  .tag:hover { border-color: var(--accent); color: var(--accent-ink); background: var(--accent-bg); }
+  .tag.active { border-color: var(--accent); color: var(--on-color); background: var(--accent); }
+
+  /* ---------- Deps view ---------- */
+  .dep-card { border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin-top: 14px; background: var(--surface); }
+  .dep-card .dep-head { display: flex; align-items: center; gap: 11px; flex-wrap: wrap; }
+  .dep-card .dep-tag { font: 700 12.5px/1 var(--mono); color: var(--accent-ink); background: var(--accent-bg); padding: 5px 9px; border-radius: 6px; }
+  .dep-card .dep-state { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; }
+  .dep-card .dep-desc { font-size: 13.5px; color: var(--ink-soft); margin: 9px 0 14px; }
+  .dep-unlocks { font-size: 11.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 8px; }
+  .dep-list { display: flex; flex-direction: column; gap: 7px; }
+  .dep-item { display: flex; align-items: baseline; gap: 9px; font-size: 13.5px; }
+  .dep-item .gid { font: 600 11px/1 var(--mono); color: var(--ink-faint); flex: none; width: 30px; }
+
+  /* ---------- Waves ---------- */
+  .wave-group { margin-top: 30px; position: relative; padding-left: 28px; }
+  .wave-group::before { content: ""; position: absolute; left: 8px; top: 6px; bottom: 6px; width: 2px; background: var(--line); }
+  .wave-group::after { content: ""; position: absolute; left: 3px; top: 5px; width: 12px; height: 12px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); }
+  .wave-group.entregue::after { border-color: var(--done); background: var(--done); }
+  .wave-head { display: flex; align-items: baseline; gap: 11px; margin-bottom: 4px; flex-wrap: wrap; }
+  .wave-head h2 { font-size: 16px; font-weight: 640; }
+  .wave-head .tag-when { font: 600 11.5px/1 var(--mono); color: var(--accent-ink); background: var(--accent-bg); padding: 4px 8px; border-radius: 5px; }
+  .wave-head.entregue .tag-when { color: var(--done); background: var(--done-bg); }
+  .wave-sub { font-size: 13px; color: var(--ink-soft); margin-bottom: 6px; }
+
+  /* ---------- Timeline ---------- */
+  .tl-top { display: flex; gap: 18px 26px; align-items: center; flex-wrap: wrap; margin: 26px 0 6px; }
+  .tl-stat { font-size: 13.5px; color: var(--ink-soft); }
+  .tl-stat strong { color: var(--ink); font-variant-numeric: tabular-nums; font-weight: 680; }
+  .tl-sizes { font-size: 12px; color: var(--ink-faint); }
+  .tl-sizes b { font-family: var(--mono); color: var(--ink-soft); font-weight: 700; }
+  .tl-streams { color: var(--ink-faint); font-weight: 500; }
+  .tl-note { font-size: 12px; color: var(--ink-faint); margin: 2px 0 18px; max-width: 70ch; }
+
+  .tl-chart { display: grid; grid-template-columns: 230px 1fr; column-gap: 0; }
+  .tl-ruler-l { border-bottom: 1px solid var(--line); }
+  .tl-ruler { position: relative; height: 26px; border-bottom: 1px solid var(--line); }
+  .tl-tick { position: absolute; top: 0; bottom: 0; transform: translateX(-50%); }
+  .tl-tick span { font: 600 10.5px/1 var(--mono); color: var(--ink-faint); position: absolute; top: 4px; left: 50%; transform: translateX(-50%); white-space: nowrap; }
+  .tl-tick::after { content: ""; position: absolute; left: 50%; top: 19px; height: 7px; width: 1px; background: var(--line); }
+
+  .tl-band { grid-column: 1 / -1; display: grid; grid-template-columns: 230px 1fr; align-items: center; margin-top: 16px; }
+  .tl-band-l { display: flex; align-items: baseline; gap: 9px; padding-right: 14px; }
+  .tl-band-l .tag-when { font: 600 10.5px/1 var(--mono); color: var(--accent-ink); background: var(--accent-bg); padding: 3px 6px; border-radius: 5px; flex: none; }
+  .tl-band-l.entregue .tag-when { color: var(--done); background: var(--done-bg); }
+  .tl-band-l h3 { font-size: 13.5px; font-weight: 640; letter-spacing: -0.005em; }
+  .tl-band-rng { position: relative; height: 8px; }
+  .tl-band-rng > span { position: absolute; top: 0; height: 8px; border-radius: 999px; background: var(--accent-bg); border: 1px solid var(--accent-bg); }
+
+  .tl-row { grid-column: 1 / -1; display: grid; grid-template-columns: 230px 1fr; align-items: center; min-height: 30px; transition: opacity .15s; }
+  .tl-row.dim { opacity: 0.22; }
+  .tl-label { display: flex; align-items: center; gap: 7px; padding: 3px 14px 3px 0; overflow: hidden; }
+  .tl-label .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .tl-label .t { font-size: 12.5px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tl-label .size { margin-left: auto; flex: none; }
+  .tl-track { position: relative; height: 26px; background-image: repeating-linear-gradient(90deg, var(--line-soft) 0, var(--line-soft) 1px, transparent 1px, transparent calc(var(--tl-step) / var(--tl-total) * 100%)); }
+  .tl-bar { position: absolute; top: 3px; height: 20px; border-radius: 5px; display: flex; align-items: center; padding: 0 7px; min-width: 14px; overflow: hidden; box-shadow: 0 1px 1.5px oklch(0 0 0 / 0.08); transition: left .35s cubic-bezier(.22,1,.36,1), width .35s cubic-bezier(.22,1,.36,1); }
+  .tl-bar span { font: 700 10.5px/1 var(--mono); white-space: nowrap; }
+  .tl-bar.done{background:var(--done);color:var(--on-color)} .tl-bar.partial{background:var(--partial);color:oklch(0.30 0.07 60)} .tl-bar.blocked{background:var(--blocked);color:var(--on-color)} .tl-bar.todo{background:var(--todo);color:var(--on-color)} .tl-bar.deferred{background:var(--deferred);color:var(--on-color)}
+
+  .empty { padding: 50px 0; text-align: center; color: var(--ink-faint); font-size: 14px; }
+  footer { border-top: 1px solid var(--line); padding: 22px 0; color: var(--ink-faint); font-size: 12.5px; }
+  footer code { font-family: var(--mono); }
+
+  @media (max-width: 680px) {
+    .row { grid-template-columns: 1fr; gap: 8px; }
+    .tags { justify-content: flex-start; max-width: none; }
+    .pill { align-self: start; }
+    h1 { font-size: 25px; }
+    .tl-chart, .tl-band, .tl-row { grid-template-columns: 150px 1fr; }
+    .tl-label .size { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Amigo · Franchise Backoffice</div>
+    <h1>Roadmap de Entregas</h1>
+    <p class="lede">O que está entregue, parcial e pendente, cruzando o que a API expõe hoje com o que o front consome e com as dependências de produto e integração.</p>
+    <div class="progress">
+      <div class="bar" id="bar"></div>
+      <div class="legend" id="legend"></div>
+    </div>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="wrap controls-row">
+    <div class="seg" id="seg" role="tablist">
+      <button role="tab" data-view="areas" aria-selected="true">Áreas</button>
+      <button role="tab" data-view="timeline" aria-selected="false">Cronograma</button>
+      <button role="tab" data-view="waves" aria-selected="false">Ondas</button>
+      <button role="tab" data-view="deps" aria-selected="false">Dependências</button>
+    </div>
+    <label class="search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+      <input type="search" id="search" placeholder="Buscar entrega, endpoint, observação…" autocomplete="off">
+    </label>
+    <span class="filter-note" id="depnote">
+      <span>Filtrando por <strong id="depnote-tag"></strong></span>
+      <button id="depclear">limpar</button>
+    </span>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="view active" id="view-areas"></div>
+  <div class="view" id="view-timeline"></div>
+  <div class="view" id="view-waves"></div>
+  <div class="view" id="view-deps"></div>
+</main>
+
+<footer>
+  <div class="wrap">
+    Gerado a partir de <code>docs/roadmap.md</code>. Edite o array <code>ITEMS</code> no fonte desta página para manter sincronizado. Última métrica: Conversão Global (commit <code>dfc9c6a</code>).
+  </div>
+</footer>
+
+<script>
+const STATUS = {
+  done:     { label: "Entregue",  desc: "Na API e consumido via HTTP real" },
+  partial:  { label: "Parcial",   desc: "Funciona com lacuna conhecida" },
+  blocked:  { label: "Bloqueado", desc: "Travado por dependência externa" },
+  todo:     { label: "A fazer",   desc: "Não iniciado" },
+  deferred: { label: "Diferido",  desc: "Fora do escopo atual" },
+};
+const ORDER = ["done","partial","blocked","todo","deferred"];
+
+// T-shirt sizing → semanas de esforço (definição)
+const SIZES = { XS: 0.5, S: 1, M: 2, L: 3, XL: 5 };
+// "Somos o cão": 1 semana de esforço = 2 dias úteis. Cronograma é contado em dias.
+const DAYS_PER_WEEK = 2;
+const days = sz => SIZES[sz] * DAYS_PER_WEEK;          // XS 1 · S 2 · M 4 · L 6 · XL 10
+const fmtD = n => Number.isInteger(n) ? String(n) : n.toFixed(1);
+
+const DEPS = {
+  "ORAL-UNIC":       { state: "Reunião marcada", desc: "Definição da regra de score com a Oral Unic." },
+  "API-ROYALTIES":   { state: "Doc pendente",    desc: "Documentação da API de royalties ainda não recebida." },
+  "API-ENCANTÔMETRO":{ state: "Doc pendente",    desc: "Documentação da API de encantômetro/NPS ainda não recebida." },
+  "SAP/RAMO":        { state: "A integrar",      desc: "Fonte da verdade de NFs, FNP, boletos e % de royalty." },
+  "FONTE-MKT":       { state: "A definir",       desc: "Como o gasto de marketing será cadastrado (Aymar/Geo com Oral Unic)." },
+  "DEF-DESPESAS":    { state: "A definir",       desc: "Regime (caixa vs. competência) e regra de rateio de despesas." },
+};
+
+const WAVES = {
+  "✓": { title: "Entregue", when: "agora", sub: "Em produção via HTTP real ponta a ponta." },
+  "A": { title: "Onda A — fechar o que está perto", when: "sem dep.", sub: "Nada trava, depende só de execução interna." },
+  "B": { title: "Onda B — pós regra de score", when: "após ORAL-UNIC", sub: "Destrava status, unidades em atenção/alerta e listagem." },
+  "C": { title: "Onda C — royalties ponta a ponta", when: "após ROYALTIES + SAP", sub: "% real, histórico, cálculo por franquia e boleto." },
+  "D": { title: "Onda D — encantômetro & NPS", when: "após ENCANTÔMETRO", sub: "Benchmark, NPS no detalhe e meta de encantômetro." },
+  "E": { title: "Onda E — despesas, CAC e marketing", when: "após DESPESAS/MKT", sub: "Despesas no diagnóstico, CAC e investimento de marketing." },
+};
+const WAVE_ORDER = ["✓","A","B","C","D","E"];
+
+// g, area, title, status, endpoint, note, deps[], wave, size
+const ITEMS = [
+  { g:"1", area:"Fundação & Autenticação", title:"Login (e-mail/senha)", status:"done", endpoint:"POST /auth/login", note:"Proxy PKCE + MFA sobre amigo-auth.", deps:[], wave:"✓", size:"XS" },
+  { g:"1", area:"Fundação & Autenticação", title:"Envio de código MFA", status:"done", endpoint:"POST /auth/mfa/send-code", note:"SMS / e-mail / whatsapp.", deps:[], wave:"✓", size:"XS" },
+  { g:"1", area:"Fundação & Autenticação", title:"Validação MFA → sessão", status:"done", endpoint:"POST /auth/mfa/validate", note:"Set-Cookie bi_session (JWT HttpOnly).", deps:[], wave:"✓", size:"S" },
+  { g:"1", area:"Fundação & Autenticação", title:"Logout", status:"done", endpoint:"POST /auth/logout", note:"Limpa cookie; não revoga JWT upstream (débito conhecido).", deps:[], wave:"✓", size:"XS" },
+  { g:"1", area:"Fundação & Autenticação", title:"Bootstrap do usuário", status:"done", endpoint:"GET /user-info", note:"{ id, name, email, role, companies, thumbUrl }.", deps:[], wave:"✓", size:"S" },
+  { g:"1", area:"Fundação & Autenticação", title:"Foto / avatar do usuário", status:"done", endpoint:"em /user-info", note:"URL assinada via UserPhotoService.", deps:[], wave:"✓", size:"S" },
+  { g:"1", area:"Fundação & Autenticação", title:"Guards de acesso", status:"done", endpoint:"", note:"AuthCookieGuard, RolesGuard, CompanyAccessGuard.", deps:[], wave:"✓", size:"S" },
+  { g:"1", area:"Fundação & Autenticação", title:"Integração “Esqueceu sua senha?”", status:"todo", endpoint:"POST /auth/forgot-password (proposto)", note:"Proxy do fluxo de recuperação do amigo-auth. UI já existe na tela de Login; falta endpoint BFF + broker upstream.", deps:[], wave:"A", size:"S" },
+
+  { g:"2", area:"Listagem & Detalhe de Franquias", title:"Listagem paginada + busca + região", status:"done", endpoint:"GET /franchisees", note:"Consumido via HTTP real.", deps:[], wave:"✓", size:"M" },
+  { g:"2", area:"Listagem & Detalhe de Franquias", title:"Detalhe da franquia (núcleo)", status:"partial", endpoint:"GET /franchisees/:id", note:"DTO real; front ainda sobrepõe template mock para units, nps, director, revenueTrendK.", deps:[], wave:"A", size:"S" },
+  { g:"2", area:"Listagem & Detalhe de Franquias", title:"Histórico de faturamento (6 meses)", status:"done", endpoint:"GET /franchisees/:id/billing-history", note:"Alimenta o gráfico de tendência.", deps:[], wave:"✓", size:"M" },
+  { g:"2", area:"Listagem & Detalhe de Franquias", title:"Resumo / KPIs do mês", status:"partial", endpoint:"GET /franchisees/:id/summary", note:"monthRevenue e closedEvaluations reais; royaltyPercent mockado em 5%.", deps:["API-ROYALTIES"], wave:"C", size:"XS" },
+
+  { g:"3", area:"Dashboard Executivo", title:"Ranking de faturamento (Top 20)", status:"done", endpoint:"GET /dashboard/revenue-ranking", note:"FRANCHISOR-only; HTTP real.", deps:[], wave:"✓", size:"M" },
+  { g:"3", area:"Dashboard Executivo", title:"Faixa de KPIs (GMV, unidades ativas)", status:"partial", endpoint:"", note:"Front ainda usa listFranchiseesLegacyMock() para parte da faixa.", deps:[], wave:"A", size:"S" },
+  { g:"3", area:"Dashboard Executivo", title:"Benchmarks de performance", status:"blocked", endpoint:"", note:"Margem e conversão reais; encantômetro depende da integração.", deps:["API-ENCANTÔMETRO"], wave:"D", size:"M" },
+  { g:"3", area:"Dashboard Executivo", title:"Estatística de unidades em atenção", status:"blocked", endpoint:"", note:"Travado pela regra de score.", deps:["ORAL-UNIC"], wave:"B", size:"S" },
+  { g:"3", area:"Dashboard Executivo", title:"Listagem de unidades em alerta", status:"blocked", endpoint:"", note:"Travado pela regra de score.", deps:["ORAL-UNIC"], wave:"B", size:"S" },
+
+  { g:"4", area:"Regra de Score & Status de Saúde", title:"Definição da fórmula de score", status:"blocked", endpoint:"", note:"Hoje a API não computa score; front usa HEALTH_SCORES hardcoded.", deps:["ORAL-UNIC"], wave:"B", size:"M" },
+  { g:"4", area:"Regra de Score & Status de Saúde", title:"Cálculo de score por franquia", status:"todo", endpoint:"", note:"Engine de cálculo, depende da fórmula.", deps:["ORAL-UNIC"], wave:"B", size:"M" },
+  { g:"4", area:"Regra de Score & Status de Saúde", title:"Status (HEALTHY / ATTENTION / CRITICAL / BLOCKED)", status:"todo", endpoint:"", note:"Alimenta detalhe e listagem.", deps:["ORAL-UNIC"], wave:"B", size:"S" },
+  { g:"4", area:"Regra de Score & Status de Saúde", title:"Status + score na listagem geral", status:"todo", endpoint:"", note:"Coluna de status/score na listagem.", deps:["ORAL-UNIC"], wave:"B", size:"S" },
+
+  { g:"5", area:"Diagnóstico (aba Análise)", title:"Inadimplência — 6/6 métricas", status:"done", endpoint:"GET …/diagnostics/delinquency?month=", note:"Sem fallback no front; 100% API real.", deps:[], wave:"✓", size:"L" },
+  { g:"5", area:"Diagnóstico (aba Análise)", title:"Lucratividade — 5/13 métricas", status:"partial", endpoint:"GET …/diagnostics/profitability?month=", note:"Margem, faturamento, fluxo, resgate, ticket prontos; % entrada e 7 despesas em stub.", deps:["DEF-DESPESAS","SAP/RAMO"], wave:"E", size:"L" },
+  { g:"5", area:"Diagnóstico (aba Análise)", title:"Comercial — 4/6 métricas", status:"partial", endpoint:"GET …/diagnostics/commercial?month=", note:"Conversão Global (recém-entregue) e cia prontos; CAC e marketing em stub.", deps:["FONTE-MKT"], wave:"E", size:"M" },
+
+  { g:"6", area:"Encantômetro & NPS", title:"Integração com API de Encantômetro/NPS", status:"blocked", endpoint:"", note:"Ausente na API; documentação ainda não recebida.", deps:["API-ENCANTÔMETRO"], wave:"D", size:"L" },
+  { g:"6", area:"Encantômetro & NPS", title:"Métrica de encantômetro + taxa de resposta", status:"todo", endpoint:"", note:"Bloco Gente/Cliente; depende da integração.", deps:["API-ENCANTÔMETRO"], wave:"D", size:"M" },
+
+  { g:"7", area:"Royalties", title:"Integração com API de Royalties", status:"blocked", endpoint:"", note:"Módulo vazio; RoyaltyRateService retorna 5% hardcoded.", deps:["API-ROYALTIES"], wave:"C", size:"L" },
+  { g:"7", area:"Royalties", title:"% de royalty real por franquia", status:"blocked", endpoint:"alimenta /summary", note:"Substitui o mock de 5%.", deps:["API-ROYALTIES","SAP/RAMO"], wave:"C", size:"S" },
+  { g:"7", area:"Royalties", title:"Histórico + cálculo de royalty por franquia", status:"todo", endpoint:"GET /franchisees/:id/royalties?month=", note:"Agregação mensal por unidade.", deps:["API-ROYALTIES","SAP/RAMO"], wave:"C", size:"M" },
+  { g:"7", area:"Royalties", title:"Gestão (fechamento mensal) + download de boleto", status:"todo", endpoint:"GET /royalties?month= · proxy", note:"Depende do sync SAP/RAMO.", deps:["SAP/RAMO"], wave:"C", size:"L" },
+
+  { g:"8", area:"Configuração de Planejamento (Metas)", title:"Versão inicial de planejamento", status:"done", endpoint:"", note:"Finalizada.", deps:[], wave:"✓", size:"M" },
+  { g:"8", area:"Configuração de Planejamento (Metas)", title:"Meta de Encantômetro", status:"todo", endpoint:"", note:"Ampliação de escopo; depende da integração de encantômetro.", deps:["API-ENCANTÔMETRO"], wave:"D", size:"S" },
+  { g:"8", area:"Configuração de Planejamento (Metas)", title:"Meta de Conversão Global", status:"todo", endpoint:"", note:"Ampliação de escopo; a métrica já existe.", deps:[], wave:"A", size:"S" },
+
+  { g:"9", area:"Bloqueio / Desbloqueio de Unidades", title:"Histórico de bloqueios", status:"todo", endpoint:"GET /franchisees/:id/blocks (proposto)", note:"Front usa BLOQUEIOS_API mock.", deps:[], wave:"A", size:"S" },
+  { g:"9", area:"Bloqueio / Desbloqueio de Unidades", title:"Bloquear / desbloquear unidade", status:"todo", endpoint:"POST / PATCH (proposto)", note:"Exige Audit Log antes de subir.", deps:[], wave:"A", size:"M" },
+
+  { g:"10", area:"Despesas / Orçamento / CAC", title:"Estatísticas de despesas", status:"blocked", endpoint:"", note:"Como será cadastrado no sistema (Aymar/Geo com Oral Unic).", deps:["DEF-DESPESAS"], wave:"E", size:"M" },
+  { g:"10", area:"Despesas / Orçamento / CAC", title:"Pagamento de entrada do orçamento", status:"todo", endpoint:"", note:"Aguardando definição de produto.", deps:[], wave:"E", size:"M" },
+  { g:"10", area:"Despesas / Orçamento / CAC", title:"CAC e Investimento de Marketing", status:"blocked", endpoint:"", note:"Aguardando fonte de gasto de marketing.", deps:["FONTE-MKT"], wave:"E", size:"M" },
+
+  { g:"11", area:"Auditoria (transversal)", title:"Audit Log (quem / o quê / quando / antes / depois)", status:"todo", endpoint:"", note:"AuditModule declarado mas vazio. Pré-requisito de qualquer escrita.", deps:[], wave:"A", size:"M" },
+
+  { g:"12", area:"SAP/RAMO (transversal)", title:"Auth, fechamento mensal, sync de boleto, proxy, health admin", status:"todo", endpoint:"", note:"Fonte da verdade; habilita despesas, royalties e boletos.", deps:["SAP/RAMO"], wave:"C", size:"XL" },
+
+  { g:"13", area:"Diferido (Épico 2)", title:"Insights de IA", status:"deferred", endpoint:"", note:"Não construir até o Épico 1 fechar.", deps:[], wave:null, size:"XL" },
+];
+
+// ---------- State ----------
+const state = { view: "areas", active: new Set(ORDER), search: "", dep: null, streams: 4 };
+
+const css = s => getComputedStyle(document.documentElement).getPropertyValue(s);
+const esc = s => s.replace(/[&<>]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;" }[c]));
+
+// ---------- Progress bar + legend ----------
+function buildProgress() {
+  const counts = ORDER.reduce((a,s)=>(a[s]=ITEMS.filter(i=>i.status===s).length,a),{});
+  const total = ITEMS.length;
+  document.getElementById("bar").innerHTML = ORDER.filter(s=>counts[s])
+    .map(s=>`<span class="s-${s}" style="width:${counts[s]/total*100}%" title="${STATUS[s].label}: ${counts[s]}"></span>`).join("");
+  document.getElementById("legend").innerHTML = ORDER.map(s=>`
+    <button data-status="${s}" aria-pressed="true" title="${STATUS[s].desc}">
+      <span class="dot" style="background:${css('--'+s)}"></span>
+      <span>${STATUS[s].label}</span><span class="n">${counts[s]}</span>
+    </button>`).join("");
+  document.querySelectorAll(".legend button").forEach(b=>b.addEventListener("click",()=>{
+    const s = b.dataset.status;
+    if (state.active.has(s) && state.active.size === ORDER.length) state.active = new Set([s]);
+    else if (state.active.has(s)) { state.active.delete(s); if(!state.active.size) state.active = new Set(ORDER); }
+    else state.active.add(s);
+    if (!state.active.size) state.active = new Set(ORDER);
+    syncLegend(); render();
+  }));
+}
+function syncLegend(){
+  const all = state.active.size === ORDER.length;
+  document.querySelectorAll(".legend button").forEach(b=>b.setAttribute("aria-pressed", all || state.active.has(b.dataset.status)));
+}
+
+// ---------- Filtering ----------
+function visible(i){
+  if (!state.active.has(i.status)) return false;
+  if (state.dep && !i.deps.includes(state.dep)) return false;
+  if (state.search){
+    const q = state.search.toLowerCase();
+    const hay = (i.title+" "+i.area+" "+i.endpoint+" "+i.note+" "+i.deps.join(" ")+" "+i.size).toLowerCase();
+    if (!hay.includes(q)) return false;
+  }
+  return true;
+}
+
+function pill(s){ return `<span class="pill ${s}"><span class="dot" style="background:${css('--'+s)}"></span>${STATUS[s].label}</span>`; }
+function tagHtml(d){ return `<span class="tag${state.dep===d?' active':''}" data-dep="${d}">${d}</span>`; }
+function rowHtml(i){
+  return `<div class="row">
+    ${pill(i.status)}
+    <div class="body">
+      <div class="title">${esc(i.title)}<span class="size" title="${i.size} ≈ ${fmtD(days(i.size))} dia(s)">${i.size}</span></div>
+      <div class="note">${i.endpoint?`<code>${esc(i.endpoint)}</code> · `:""}${esc(i.note)}</div>
+    </div>
+    <div class="tags">${i.deps.map(tagHtml).join("")}</div>
+  </div>`;
+}
+
+// ---------- Areas / Waves / Deps ----------
+function renderAreas(){
+  const items = ITEMS.filter(visible);
+  const el = document.getElementById("view-areas");
+  if(!items.length){ el.innerHTML = emptyHtml(); return; }
+  el.innerHTML = [...new Set(items.map(i=>i.g))].map(g=>{
+    const gi = items.filter(i=>i.g===g);
+    return `<section class="group">
+      <div class="group-head"><span class="gid">${g}</span><h2>${esc(gi[0].area)}</h2>
+        <span class="meta">${gi.length} ${gi.length===1?'item':'itens'}</span></div>
+      ${gi.map(rowHtml).join("")}
+    </section>`;
+  }).join("");
+}
+function renderWaves(){
+  const items = ITEMS.filter(visible);
+  const el = document.getElementById("view-waves");
+  if(!items.length){ el.innerHTML = emptyHtml(); return; }
+  el.innerHTML = WAVE_ORDER.map(w=>{
+    const wi = items.filter(i=>i.wave===w); if(!wi.length) return "";
+    const m = WAVES[w]; const entr = w==="✓" ? " entregue" : "";
+    return `<section class="wave-group${entr}">
+      <div class="wave-head${entr}"><h2>${esc(m.title)}</h2><span class="tag-when">${esc(m.when)}</span></div>
+      <div class="wave-sub">${esc(m.sub)}</div>${wi.map(rowHtml).join("")}
+    </section>`;
+  }).join("");
+  const def = items.filter(i=>i.wave===null);
+  if(def.length) el.innerHTML += `<section class="wave-group"><div class="wave-head"><h2>Sem onda</h2><span class="tag-when">diferido</span></div>${def.map(rowHtml).join("")}</section>`;
+}
+function renderDeps(){
+  document.getElementById("view-deps").innerHTML = Object.keys(DEPS).map(d=>{
+    const unlocks = ITEMS.filter(i=>i.deps.includes(d));
+    return `<div class="dep-card">
+      <div class="dep-head"><span class="dep-tag">${d}</span>
+        <span class="dep-state" style="color:${css('--blocked')};background:${css('--blocked-bg')}">${DEPS[d].state}</span></div>
+      <div class="dep-desc">${esc(DEPS[d].desc)}</div>
+      <div class="dep-unlocks">Destrava ${unlocks.length} ${unlocks.length===1?'entrega':'entregas'}</div>
+      <div class="dep-list">${unlocks.map(i=>`<div class="dep-item"><span class="gid">§${i.g}</span><span>${esc(i.title)} <span class="size">${i.size}</span></span></div>`).join("")}</div>
+    </div>`;
+  }).join("");
+}
+
+// ---------- Timeline ----------
+function schedule(streams){
+  const rem = ITEMS.filter(i=>i.wave && i.wave!=="✓");
+  rem.sort((a,b)=> WAVE_ORDER.indexOf(a.wave)-WAVE_ORDER.indexOf(b.wave) || ITEMS.indexOf(a)-ITEMS.indexOf(b));
+  const sched = []; let waveStart = 0;
+  for(const w of WAVE_ORDER){
+    if(w==="✓") continue;
+    const wi = rem.filter(i=>i.wave===w); if(!wi.length) continue;
+    const lanes = Array(streams).fill(waveStart);
+    for(const it of wi){
+      const li = lanes.indexOf(Math.min(...lanes));
+      const start = lanes[li], dur = days(it.size);
+      sched.push({ item: it, wave: w, start, dur, end: start+dur });
+      lanes[li] = start + dur;
+    }
+    waveStart = Math.max(...lanes);
+  }
+  return { sched, total: waveStart };
+}
+
+function renderTimeline(){
+  const el = document.getElementById("view-timeline");
+  const { sched, total } = schedule(state.streams);
+  const effort = ITEMS.filter(i=>i.wave && i.wave!=="✓").reduce((s,i)=>s+days(i.size),0);
+  const step = total <= 12 ? 2 : total <= 30 ? 5 : total <= 70 ? 10 : 20;
+
+  // ruler ticks (em dias)
+  let ticks = "";
+  for(let t=0; t<=Math.ceil(total); t+=step) ticks += `<div class="tl-tick" style="left:${t/total*100}%"><span>D${t}</span></div>`;
+
+  // grouped by wave
+  let bands = "";
+  for(const w of WAVE_ORDER){
+    if(w==="✓") continue;
+    const ws = sched.filter(s=>s.wave===w); if(!ws.length) continue;
+    const a = Math.min(...ws.map(s=>s.start)), b = Math.max(...ws.map(s=>s.end));
+    const wEffort = ws.reduce((s,x)=>s+x.dur,0);
+    bands += `<div class="tl-band">
+      <div class="tl-band-l"><span class="tag-when">${esc(WAVES[w].when)}</span><h3>Onda ${w} · D${fmtD(a)}–D${fmtD(b)} · ${fmtD(wEffort)}d esforço</h3></div>
+      <div class="tl-band-rng"><span style="left:${a/total*100}%;width:${(b-a)/total*100}%"></span></div>
+    </div>`;
+    bands += ws.map(s=>{
+      const i = s.item; const vis = visible(i);
+      return `<div class="tl-row${vis?'':' dim'}">
+        <div class="tl-label"><span class="dot" style="background:${css('--'+i.status)}"></span><span class="t" title="${esc(i.title)}">${esc(i.title)}</span><span class="size">${i.size}</span></div>
+        <div class="tl-track"><div class="tl-bar ${i.status}" style="left:${s.start/total*100}%;width:${s.dur/total*100}%" title="${esc(i.title)} — ${i.size}, ${fmtD(s.dur)}d (D${fmtD(s.start)}→D${fmtD(s.end)})"><span>${i.size}·${fmtD(s.dur)}d</span></div></div>
+      </div>`;
+    }).join("");
+  }
+
+  el.innerHTML = `
+    <div class="tl-top">
+      <div class="tl-stat"><strong>≈ ${fmtD(effort)}</strong> dias de esforço · <strong>≈ ${fmtD(total)}</strong> dias de calendário <span class="tl-streams">com ${state.streams} frentes em paralelo</span></div>
+      <div class="tl-sizes">Tamanho → dias: <b>XS</b> 1 · <b>S</b> 2 · <b>M</b> 4 · <b>L</b> 6 · <b>XL</b> 10</div>
+    </div>
+    <p class="tl-note">🐕 Somos o cão: <b>1 semana de esforço = 2 dias úteis</b>. Dias relativos (não datas). As ondas são sequenciais por dependência; aqui as bloqueadas são posicionadas como se a dependência externa já tivesse chegado. Itens já entregues não entram no cronograma.</p>
+    <div class="tl-chart" style="--tl-total:${total};--tl-step:${step}">
+      <div class="tl-ruler-l"></div>
+      <div class="tl-ruler">${ticks}</div>
+      ${bands}
+    </div>`;
+}
+
+function emptyHtml(){ return `<div class="empty">Nenhuma entrega corresponde aos filtros atuais.</div>`; }
+
+function render(){
+  if(state.view==="areas") renderAreas();
+  else if(state.view==="timeline") renderTimeline();
+  else if(state.view==="waves") renderWaves();
+  else renderDeps();
+  document.querySelectorAll(".tag").forEach(t=>t.addEventListener("click",()=>setDep(state.dep===t.dataset.dep ? null : t.dataset.dep)));
+}
+function setDep(d){
+  state.dep = d;
+  const note = document.getElementById("depnote");
+  note.classList.toggle("on", !!d);
+  if(d) document.getElementById("depnote-tag").textContent = d;
+  render();
+}
+
+// ---------- Wiring ----------
+document.querySelectorAll("#seg button").forEach(b=>b.addEventListener("click",()=>{
+  state.view = b.dataset.view;
+  document.querySelectorAll("#seg button").forEach(x=>x.setAttribute("aria-selected", x===b));
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  document.getElementById("view-"+state.view).classList.add("active");
+  render();
+}));
+document.getElementById("search").addEventListener("input", e=>{ state.search = e.target.value.trim(); render(); });
+document.getElementById("depclear").addEventListener("click", ()=>setDep(null));
+
+buildProgress();
+render();
+</script>
+</body>
+</html>
