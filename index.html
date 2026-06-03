@@ -114,6 +114,23 @@
   .dep-item { display: flex; align-items: baseline; gap: 9px; font-size: 13.5px; }
   .dep-item .gid { font: 600 11px/1 var(--mono); color: var(--ink-faint); flex: none; width: 30px; }
 
+  /* ---------- Dep delay tracking ---------- */
+  .dep-summary { display: flex; flex-wrap: wrap; gap: 6px 22px; align-items: baseline; margin: 4px 0 2px; font-size: 13.5px; color: var(--ink-soft); }
+  .dep-summary strong { color: var(--ink); font-variant-numeric: tabular-nums; font-weight: 680; }
+  .dep-chrono { display: flex; flex-wrap: wrap; gap: 7px; margin: 0 0 11px; }
+  .chrono { font: 600 12px/1 var(--mono); color: var(--ink-soft); background: var(--panel); border: 1px solid var(--line); padding: 5px 9px; border-radius: 6px; display: inline-flex; gap: 6px; align-items: center; }
+  .chrono i { font: 600 9.5px/1 var(--sans); font-style: normal; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-faint); }
+  .chrono.pend { border-style: dashed; color: var(--ink-faint); }
+  .dep-delay { display: flex; align-items: center; gap: 11px; flex-wrap: wrap; }
+  .dep-delay .dd-badge { font-size: 12.5px; font-weight: 600; padding: 4px 11px; border-radius: 999px; }
+  .dep-delay .dd-badge b { font-variant-numeric: tabular-nums; font-weight: 720; }
+  .dep-delay.done .dd-badge { color: var(--done); background: var(--done-bg); }
+  .dep-delay.partial .dd-badge { color: oklch(0.45 0.11 60); background: var(--partial-bg); }
+  .dep-delay.blocked .dd-badge { color: var(--blocked); background: var(--blocked-bg); }
+  .dep-delay.none { font-size: 12.5px; color: var(--ink-faint); font-style: italic; }
+  .dep-overdue { font-size: 12px; font-weight: 640; color: var(--blocked); }
+  .dep-log { font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); margin-top: 11px; padding-left: 11px; border-left: 2px solid var(--line); }
+
   /* ---------- Waves ---------- */
   .wave-group { margin-top: 30px; position: relative; padding-left: 28px; }
   .wave-group::before { content: ""; position: absolute; left: 8px; top: 6px; bottom: 6px; width: 2px; background: var(--line); }
@@ -237,13 +254,22 @@ const DAYS_PER_WEEK = 2;
 const days = sz => SIZES[sz] * DAYS_PER_WEEK;          // XS 1 · S 2 · M 4 · L 6 · XL 10
 const fmtD = n => Number.isInteger(n) ? String(n) : n.toFixed(1);
 
+// Datas em AAAA-MM-DD. requested = quando pedimos · resolved = quando chegou (null = pendente)
+// promised = prazo prometido pela contraparte (opcional) · log = histórico livre.
 const DEPS = {
-  "ORAL-UNIC":       { state: "Reunião marcada", desc: "Definição da regra de score com a Oral Unic." },
-  "API-ROYALTIES":   { state: "Doc pendente",    desc: "Documentação da API de royalties ainda não recebida." },
-  "API-ENCANTÔMETRO":{ state: "Doc pendente",    desc: "Documentação da API de encantômetro/NPS ainda não recebida." },
-  "SAP/RAMO":        { state: "A integrar",      desc: "Fonte da verdade de NFs, FNP, boletos e % de royalty." },
-  "FONTE-MKT":       { state: "A definir",       desc: "Como o gasto de marketing será cadastrado (Aymar/Geo com Oral Unic)." },
-  "DEF-DESPESAS":    { state: "A definir",       desc: "Regime (caixa vs. competência) e regra de rateio de despesas." },
+  "SAP/RAMO":        { state: "Reunião não marcada", desc: "Fonte da verdade de NFs, FNP, boletos e % de royalty — inclui a API de royalties.",
+                       requested: "2026-05-25", resolved: null, promised: null,
+                       log: "Call de alinhamento sobre a integração SAP/RAMO (que expõe a API de royalties) solicitada em 25/05. Responderam abrindo chamado interno de pré-vendas (26/05). Previsão de agenda cobrada novamente em 03/06 — ainda sem data marcada." },
+  "API-ENCANTÔMETRO":{ state: "Doc incompleta", desc: "Documentação da API de encantômetro/NPS (WeHelp) recebida sem as rotas necessárias.",
+                       requested: "2026-05-27", resolved: null, promised: null,
+                       log: "Doc solicitada em 27/05 e recebida em 03/06, mas sem as rotas que listam os resultados de NPS e encantômetro. Inclusão dessas rotas re-solicitada em 03/06 — ainda não recebida." },
+  "ORAL-UNIC":       { state: "Aguardando retorno", desc: "Definição da regra de score com a Oral Unic.",
+                       requested: "2026-06-03", resolved: null, promised: null,
+                       log: "Definições contatadas em 03/06 — ainda sem resposta." },
+  "FONTE-MKT":       { state: "A definir", desc: "Como o gasto de marketing será cadastrado (Aymar/Geo com Oral Unic).",
+                       requested: null, resolved: null, promised: null, log: "" },
+  "DEF-DESPESAS":    { state: "A definir", desc: "Regime (caixa vs. competência) e regra de rateio de despesas.",
+                       requested: null, resolved: null, promised: null, log: "" },
 };
 
 const WAVES = {
@@ -265,12 +291,12 @@ const ITEMS = [
   { g:"1", area:"Fundação & Autenticação", title:"Bootstrap do usuário", status:"done", endpoint:"GET /user-info", note:"{ id, name, email, role, companies, thumbUrl }.", deps:[], wave:"✓", size:"S" },
   { g:"1", area:"Fundação & Autenticação", title:"Foto / avatar do usuário", status:"done", endpoint:"em /user-info", note:"URL assinada via UserPhotoService.", deps:[], wave:"✓", size:"S" },
   { g:"1", area:"Fundação & Autenticação", title:"Guards de acesso", status:"done", endpoint:"", note:"AuthCookieGuard, RolesGuard, CompanyAccessGuard.", deps:[], wave:"✓", size:"S" },
-  { g:"1", area:"Fundação & Autenticação", title:"Integração “Esqueceu sua senha?”", status:"todo", endpoint:"POST /auth/forgot-password (proposto)", note:"Proxy do fluxo de recuperação do amigo-auth. UI já existe na tela de Login; falta endpoint BFF + broker upstream.", deps:[], wave:"A", size:"S" },
+  { g:"1", area:"Fundação & Autenticação", title:"Integração “Esqueceu sua senha?”", status:"done", endpoint:"POST /auth/forgot-password", note:"Proxy do fluxo de recuperação do amigo-auth. Finalizado em 03/06.", deps:[], wave:"✓", size:"S" },
 
   { g:"2", area:"Listagem & Detalhe de Franquias", title:"Listagem paginada + busca + região", status:"done", endpoint:"GET /franchisees", note:"Consumido via HTTP real.", deps:[], wave:"✓", size:"M" },
   { g:"2", area:"Listagem & Detalhe de Franquias", title:"Detalhe da franquia (núcleo)", status:"partial", endpoint:"GET /franchisees/:id", note:"DTO real; front ainda sobrepõe template mock para units, nps, director, revenueTrendK.", deps:[], wave:"A", size:"S" },
   { g:"2", area:"Listagem & Detalhe de Franquias", title:"Histórico de faturamento (6 meses)", status:"done", endpoint:"GET /franchisees/:id/billing-history", note:"Alimenta o gráfico de tendência.", deps:[], wave:"✓", size:"M" },
-  { g:"2", area:"Listagem & Detalhe de Franquias", title:"Resumo / KPIs do mês", status:"partial", endpoint:"GET /franchisees/:id/summary", note:"monthRevenue e closedEvaluations reais; royaltyPercent mockado em 5%.", deps:["API-ROYALTIES"], wave:"C", size:"XS" },
+  { g:"2", area:"Listagem & Detalhe de Franquias", title:"Resumo / KPIs do mês", status:"partial", endpoint:"GET /franchisees/:id/summary", note:"monthRevenue e closedEvaluations reais; royaltyPercent mockado em 5%.", deps:["SAP/RAMO"], wave:"C", size:"XS" },
 
   { g:"3", area:"Dashboard Executivo", title:"Ranking de faturamento (Top 20)", status:"done", endpoint:"GET /dashboard/revenue-ranking", note:"FRANCHISOR-only; HTTP real.", deps:[], wave:"✓", size:"M" },
   { g:"3", area:"Dashboard Executivo", title:"Faixa de KPIs (GMV, unidades ativas)", status:"partial", endpoint:"", note:"Front ainda usa listFranchiseesLegacyMock() para parte da faixa.", deps:[], wave:"A", size:"S" },
@@ -290,9 +316,9 @@ const ITEMS = [
   { g:"6", area:"Encantômetro & NPS", title:"Integração com API de Encantômetro/NPS", status:"blocked", endpoint:"", note:"Ausente na API; documentação ainda não recebida.", deps:["API-ENCANTÔMETRO"], wave:"D", size:"L" },
   { g:"6", area:"Encantômetro & NPS", title:"Métrica de encantômetro + taxa de resposta", status:"todo", endpoint:"", note:"Bloco Gente/Cliente; depende da integração.", deps:["API-ENCANTÔMETRO"], wave:"D", size:"M" },
 
-  { g:"7", area:"Royalties", title:"Integração com API de Royalties", status:"blocked", endpoint:"", note:"Módulo vazio; RoyaltyRateService retorna 5% hardcoded.", deps:["API-ROYALTIES"], wave:"C", size:"L" },
-  { g:"7", area:"Royalties", title:"% de royalty real por franquia", status:"blocked", endpoint:"alimenta /summary", note:"Substitui o mock de 5%.", deps:["API-ROYALTIES","SAP/RAMO"], wave:"C", size:"S" },
-  { g:"7", area:"Royalties", title:"Histórico + cálculo de royalty por franquia", status:"todo", endpoint:"GET /franchisees/:id/royalties?month=", note:"Agregação mensal por unidade.", deps:["API-ROYALTIES","SAP/RAMO"], wave:"C", size:"M" },
+  { g:"7", area:"Royalties", title:"Integração com API de Royalties", status:"blocked", endpoint:"", note:"Módulo vazio; RoyaltyRateService retorna 5% hardcoded.", deps:["SAP/RAMO"], wave:"C", size:"L" },
+  { g:"7", area:"Royalties", title:"% de royalty real por franquia", status:"blocked", endpoint:"alimenta /summary", note:"Substitui o mock de 5%.", deps:["SAP/RAMO"], wave:"C", size:"S" },
+  { g:"7", area:"Royalties", title:"Histórico + cálculo de royalty por franquia", status:"todo", endpoint:"GET /franchisees/:id/royalties?month=", note:"Agregação mensal por unidade.", deps:["SAP/RAMO"], wave:"C", size:"M" },
   { g:"7", area:"Royalties", title:"Gestão (fechamento mensal) + download de boleto", status:"todo", endpoint:"GET /royalties?month= · proxy", note:"Depende do sync SAP/RAMO.", deps:["SAP/RAMO"], wave:"C", size:"L" },
 
   { g:"8", area:"Configuração de Planejamento (Metas)", title:"Versão inicial de planejamento", status:"done", endpoint:"", note:"Finalizada.", deps:[], wave:"✓", size:"M" },
@@ -318,6 +344,38 @@ const state = { view: "areas", active: new Set(ORDER), search: "", dep: null, st
 
 const css = s => getComputedStyle(document.documentElement).getPropertyValue(s);
 const esc = s => s.replace(/[&<>]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;" }[c]));
+
+// ---------- Dependency delay tracking ----------
+const MS_DAY = 86400000;
+const _today = new Date(); _today.setHours(0,0,0,0);
+const parseDate = s => { if(!s) return null; const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
+const fmtBR = s => { const d = parseDate(s); return d ? `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}` : ""; };
+const dayWord = n => n === 1 ? "dia" : "dias";
+function depDelay(dep){
+  const req = parseDate(dep.requested);
+  if(!req) return null;
+  const res = parseDate(dep.resolved);
+  const dur = Math.max(0, Math.round(((res || _today) - req) / MS_DAY));
+  const prom = parseDate(dep.promised);
+  const overdue = (!res && prom && _today > prom) ? Math.round((_today - prom) / MS_DAY) : null;
+  return { dur, pending: !res, overdue };
+}
+function delayHtml(dep){
+  const info = depDelay(dep);
+  if(!info) return `<div class="dep-delay none">Sem data de solicitação registrada — preencha <code>requested</code> no fonte.</div>`;
+  const { dur, pending, overdue } = info;
+  const cls = pending ? (overdue != null ? "blocked" : "partial") : "done";
+  const label = pending ? `aguardando há <b>${dur}</b> ${dayWord(dur)}` : `levou <b>${dur}</b> ${dayWord(dur)}`;
+  const chips = [`<span class="chrono"><i>Solicitado</i> ${fmtBR(dep.requested)}</span>`];
+  if(dep.promised) chips.push(`<span class="chrono"><i>Prometido</i> ${fmtBR(dep.promised)}</span>`);
+  chips.push(dep.resolved
+    ? `<span class="chrono"><i>Recebido</i> ${fmtBR(dep.resolved)}</span>`
+    : `<span class="chrono pend"><i>Recebido</i> —</span>`);
+  const over = overdue != null ? `<span class="dep-overdue">⚠ ${overdue} ${dayWord(overdue)} além do prazo</span>` : "";
+  return `<div class="dep-chrono">${chips.join("")}</div>
+    <div class="dep-delay ${cls}"><span class="dd-badge">${label}</span>${over}</div>
+    ${dep.log ? `<div class="dep-log">${esc(dep.log)}</div>` : ""}`;
+}
 
 // ---------- Progress bar + legend ----------
 function buildProgress() {
@@ -399,12 +457,30 @@ function renderWaves(){
   if(def.length) el.innerHTML += `<section class="wave-group"><div class="wave-head"><h2>Sem onda</h2><span class="tag-when">diferido</span></div>${def.map(rowHtml).join("")}</section>`;
 }
 function renderDeps(){
-  document.getElementById("view-deps").innerHTML = Object.keys(DEPS).map(d=>{
+  // pendentes primeiro (maior espera no topo), depois resolvidos, depois sem data
+  const rank = info => !info ? 2 : (info.pending ? 0 : 1);
+  const keys = Object.keys(DEPS).sort((a,b)=>{
+    const ia = depDelay(DEPS[a]), ib = depDelay(DEPS[b]);
+    return rank(ia) - rank(ib) || ((ia && ib) ? ib.dur - ia.dur : 0);
+  });
+
+  const tracked = keys.map(k=>depDelay(DEPS[k])).filter(Boolean);
+  const pendingCount = tracked.filter(i=>i.pending).length;
+  const totalWait = tracked.reduce((s,i)=> s + (i.pending ? i.dur : 0), 0);
+  const summary = `<div class="dep-summary">
+      <span><strong>${keys.length}</strong> dependências externas</span>
+      <span><strong>${pendingCount}</strong> aguardando retorno</span>
+      <span><strong>${totalWait}</strong> ${dayWord(totalWait)} acumulados de espera</span>
+    </div>`;
+
+  document.getElementById("view-deps").innerHTML = summary + keys.map(d=>{
+    const dep = DEPS[d];
     const unlocks = ITEMS.filter(i=>i.deps.includes(d));
     return `<div class="dep-card">
       <div class="dep-head"><span class="dep-tag">${d}</span>
-        <span class="dep-state" style="color:${css('--blocked')};background:${css('--blocked-bg')}">${DEPS[d].state}</span></div>
-      <div class="dep-desc">${esc(DEPS[d].desc)}</div>
+        <span class="dep-state" style="color:${css('--blocked')};background:${css('--blocked-bg')}">${esc(dep.state)}</span></div>
+      <div class="dep-desc">${esc(dep.desc)}</div>
+      ${delayHtml(dep)}
       <div class="dep-unlocks">Destrava ${unlocks.length} ${unlocks.length===1?'entrega':'entregas'}</div>
       <div class="dep-list">${unlocks.map(i=>`<div class="dep-item"><span class="gid">§${i.g}</span><span>${esc(i.title)} <span class="size">${i.size}</span></span></div>`).join("")}</div>
     </div>`;
