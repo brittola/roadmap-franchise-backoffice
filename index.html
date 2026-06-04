@@ -266,10 +266,12 @@ const DEPS = {
   "ORAL-UNIC":       { state: "Aguardando retorno", desc: "Definição da regra de score com a Oral Unic.",
                        requested: "2026-06-03", resolved: null, promised: null,
                        log: "Definições contatadas em 03/06 — ainda sem resposta." },
-  "FONTE-MKT":       { state: "A definir", desc: "Como o gasto de marketing será cadastrado (Aymar/Geo com Oral Unic).",
-                       requested: null, resolved: null, promised: null, log: "" },
-  "DEF-DESPESAS":    { state: "A definir", desc: "Regime (caixa vs. competência) e regra de rateio de despesas.",
-                       requested: null, resolved: null, promised: null, log: "" },
+  "FONTE-MKT":       { state: "Definido", desc: "Como o gasto de marketing será cadastrado (Aymar/Geo com Oral Unic).",
+                       requested: "2026-06-04", resolved: "2026-06-04", promised: null,
+                       log: "Definição fechada em 04/06: como o gasto de marketing será cadastrado (Aymar/Geo com Oral Unic). Destrava o CAC/marketing do Comercial e o CAC e Investimento de Marketing." },
+  "DEF-DESPESAS":    { state: "Definido", desc: "Regime (caixa vs. competência) e regra de rateio de despesas.",
+                       requested: "2026-06-04", resolved: "2026-06-04", promised: null,
+                       log: "Regime (caixa vs. competência) e regra de rateio de despesas definidos em 04/06. Destrava as Estatísticas de despesas e as 7 despesas em stub da Lucratividade." },
 };
 
 const WAVES = {
@@ -278,9 +280,8 @@ const WAVES = {
   "B": { title: "Onda B — pós regra de score", when: "após ORAL-UNIC", sub: "Destrava status, unidades em atenção/alerta e listagem." },
   "C": { title: "Onda C — royalties ponta a ponta", when: "após ROYALTIES + SAP", sub: "% real, histórico, cálculo por franquia e boleto." },
   "D": { title: "Onda D — encantômetro & NPS", when: "após ENCANTÔMETRO", sub: "Benchmark, NPS no detalhe e meta de encantômetro." },
-  "E": { title: "Onda E — despesas, CAC e marketing", when: "após DESPESAS/MKT", sub: "Despesas no diagnóstico, CAC e investimento de marketing." },
 };
-const WAVE_ORDER = ["✓","A","B","C","D","E"];
+const WAVE_ORDER = ["✓","A","B","C","D"];
 
 // g, area, title, status, endpoint, note, deps[], wave, size
 const ITEMS = [
@@ -310,8 +311,8 @@ const ITEMS = [
   { g:"4", area:"Regra de Score & Status de Saúde", title:"Status + score na listagem geral", status:"todo", endpoint:"", note:"Coluna de status/score na listagem.", deps:["ORAL-UNIC"], wave:"B", size:"S" },
 
   { g:"5", area:"Diagnóstico (aba Análise)", title:"Inadimplência — 6/6 métricas", status:"done", endpoint:"GET …/diagnostics/delinquency?month=", note:"Sem fallback no front; 100% API real.", deps:[], wave:"✓", size:"L" },
-  { g:"5", area:"Diagnóstico (aba Análise)", title:"Lucratividade — 5/13 métricas", status:"partial", endpoint:"GET …/diagnostics/profitability?month=", note:"Margem, faturamento, fluxo, resgate, ticket prontos; % entrada e 7 despesas em stub.", deps:["DEF-DESPESAS","SAP/RAMO"], wave:"E", size:"L" },
-  { g:"5", area:"Diagnóstico (aba Análise)", title:"Comercial — 4/6 métricas", status:"partial", endpoint:"GET …/diagnostics/commercial?month=", note:"Conversão Global (recém-entregue) e cia prontos; CAC e marketing em stub.", deps:["FONTE-MKT"], wave:"E", size:"M" },
+  { g:"5", area:"Diagnóstico (aba Análise)", title:"Lucratividade — 5/13 métricas", status:"partial", endpoint:"GET …/diagnostics/profitability?month=", note:"Margem, faturamento, fluxo, resgate, ticket prontos; regra de despesas definida (04/06) — restam % entrada e 7 despesas, agora travadas só pelo SAP/RAMO.", deps:["DEF-DESPESAS","SAP/RAMO"], wave:"C", size:"L" },
+  { g:"5", area:"Diagnóstico (aba Análise)", title:"Comercial — 4/6 métricas", status:"partial", endpoint:"GET …/diagnostics/commercial?month=", note:"Conversão Global (recém-entregue) e cia prontos; fonte de marketing definida (04/06) — CAC e marketing prontos para implementar.", deps:["FONTE-MKT"], wave:"A", size:"M" },
 
   { g:"6", area:"Encantômetro & NPS", title:"Integração com API de Encantômetro/NPS", status:"blocked", endpoint:"", note:"Ausente na API; documentação ainda não recebida.", deps:["API-ENCANTÔMETRO"], wave:"D", size:"L" },
   { g:"6", area:"Encantômetro & NPS", title:"Métrica de encantômetro + taxa de resposta", status:"todo", endpoint:"", note:"Bloco Gente/Cliente; depende da integração.", deps:["API-ENCANTÔMETRO"], wave:"D", size:"M" },
@@ -328,9 +329,9 @@ const ITEMS = [
   { g:"9", area:"Bloqueio / Desbloqueio de Unidades", title:"Histórico de bloqueios", status:"todo", endpoint:"GET /franchisees/:id/blocks (proposto)", note:"Front usa BLOQUEIOS_API mock.", deps:[], wave:"A", size:"S" },
   { g:"9", area:"Bloqueio / Desbloqueio de Unidades", title:"Bloquear / desbloquear unidade", status:"todo", endpoint:"POST / PATCH (proposto)", note:"Exige Audit Log antes de subir.", deps:[], wave:"A", size:"M" },
 
-  { g:"10", area:"Despesas / Orçamento / CAC", title:"Estatísticas de despesas", status:"blocked", endpoint:"", note:"Como será cadastrado no sistema (Aymar/Geo com Oral Unic).", deps:["DEF-DESPESAS"], wave:"E", size:"M" },
-  { g:"10", area:"Despesas / Orçamento / CAC", title:"Pagamento de entrada do orçamento", status:"todo", endpoint:"", note:"Aguardando definição de produto.", deps:[], wave:"E", size:"M" },
-  { g:"10", area:"Despesas / Orçamento / CAC", title:"CAC e Investimento de Marketing", status:"blocked", endpoint:"", note:"Aguardando fonte de gasto de marketing.", deps:["FONTE-MKT"], wave:"E", size:"M" },
+  { g:"10", area:"Despesas / Orçamento / CAC", title:"Estatísticas de despesas", status:"todo", endpoint:"", note:"Regime e rateio de despesas definidos (04/06) — destravado, pronto para implementar.", deps:["DEF-DESPESAS"], wave:"A", size:"M" },
+  { g:"10", area:"Despesas / Orçamento / CAC", title:"Pagamento de entrada do orçamento", status:"todo", endpoint:"", note:"Aguardando definição de produto.", deps:[], wave:"A", size:"M" },
+  { g:"10", area:"Despesas / Orçamento / CAC", title:"CAC e Investimento de Marketing", status:"todo", endpoint:"", note:"Fonte de gasto de marketing definida (04/06) — destravado, pronto para implementar.", deps:["FONTE-MKT"], wave:"A", size:"M" },
 
   { g:"11", area:"Auditoria (transversal)", title:"Audit Log (quem / o quê / quando / antes / depois)", status:"todo", endpoint:"", note:"AuditModule declarado mas vazio. Pré-requisito de qualquer escrita.", deps:[], wave:"A", size:"M" },
 
@@ -476,9 +477,10 @@ function renderDeps(){
   document.getElementById("view-deps").innerHTML = summary + keys.map(d=>{
     const dep = DEPS[d];
     const unlocks = ITEMS.filter(i=>i.deps.includes(d));
+    const stVar = dep.resolved ? "--done" : "--blocked";
     return `<div class="dep-card">
       <div class="dep-head"><span class="dep-tag">${d}</span>
-        <span class="dep-state" style="color:${css('--blocked')};background:${css('--blocked-bg')}">${esc(dep.state)}</span></div>
+        <span class="dep-state" style="color:${css(stVar)};background:${css(stVar+'-bg')}">${esc(dep.state)}</span></div>
       <div class="dep-desc">${esc(dep.desc)}</div>
       ${delayHtml(dep)}
       <div class="dep-unlocks">Destrava ${unlocks.length} ${unlocks.length===1?'entrega':'entregas'}</div>
